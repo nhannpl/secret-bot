@@ -80,7 +80,7 @@ module.exports = {
                 } else {
                     await sentMessage.delete();
                     await targetUser.send({ content: 'The revealed message was deleted due to a timeout.', ephemeral: true });
-                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString} second(s).`, ephemeral: true });
+                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.`, ephemeral: true });
                 }
             });
         } catch (error) {
