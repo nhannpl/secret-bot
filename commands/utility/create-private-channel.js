@@ -39,6 +39,7 @@ module.exports = {
                     },
                 ],
             });
+            console.log();
 
             let replyMessage = `Created private channel <#${privateChannel.id}>.`;
             let deleteAfterMs;
