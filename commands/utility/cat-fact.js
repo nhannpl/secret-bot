@@ -3,7 +3,7 @@ const { request } = require('undici');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('cat')
+        .setName('cat-fact')
         .setDescription('Dm a cat fact that will be deleted after the receiver read it!')
         .addUserOption(option =>
             option.setName('user')

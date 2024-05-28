@@ -2,7 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time 
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('self-destruct')
+        .setName('self-destruct-dm')
         .setDescription('Send a DM that will be deleted after the receiver reads it!')
         .addUserOption(option =>
             option.setName('user')
