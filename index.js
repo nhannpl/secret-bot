@@ -12,7 +12,8 @@ const client = new Client({ intents: [
 GatewayIntentBits.GuildMessageReactions,
 GatewayIntentBits.GuildScheduledEvents,
 GatewayIntentBits.GuildModeration,
-GatewayIntentBits.DirectMessages] });
+GatewayIntentBits.DirectMessages,
+GatewayIntentBits.GuildInvites,] });
 
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
