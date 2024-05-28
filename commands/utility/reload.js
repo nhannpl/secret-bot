@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 // Replace 'YOUR_USER_ID' with your actual Discord user ID
-const  { ownerId } = require('./config.json');
+const  { ownerId } = require('../../config.json');
 
 module.exports = {
 	category: 'utility',
