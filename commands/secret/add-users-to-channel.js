@@ -62,6 +62,7 @@ module.exports = {
             }
 
             await interaction.reply({ content: message, ephemeral: true });
+            await channel.send(message);
 
         } catch (error) {
             console.error('Error adding users to the channel:', error);

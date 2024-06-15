@@ -15,10 +15,7 @@ class ChannelManager {
         return await this.guild.channels.cache.get(channelId);
     }
 
-    // async replyMessage(targetChannel, content, ephemeral = false) {
-    //     await this.guild.channels.cache.find(channel => channel.name ===targetChannel);
-    //     channel.send({ content, ephemeral });
-    // }
+
 
 
 }
