@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder } = require('discord.js');
 const schedule = require('node-schedule');
 
+
+//!NOTE!: be consistent about what time format to use: military or AM/PM - conflict with the self-destruct-dm
 class ChannelManager {
     constructor(guild) {
         this.guild = guild;
@@ -31,22 +33,61 @@ class ChannelManager {
 }
 
 class TimeParser {
+
+    static isValidDate(year, month, day) {
+        const date = new Date(year, month, day);
+        return date.getFullYear() === year &&
+               date.getMonth() === month &&
+               date.getDate() === day ;
+            //    & date.getHours() === hours &&
+            //    date.getMinutes() === minutes;
+    }
+
+    static isValidTime(hours, minutes) {
+        // Check if hours are between 0 and 23
+        if (hours < 0 || hours > 23) {
+            return false;
+        }
+
+        // Check if minutes are between 0 and 59
+        if (minutes < 0 || minutes > 59) {
+            return false;
+        }
+
+        // If all checks pass, return true
+        return true;
+    }
+
     static parseDeleteAt(deleteAt) {
         try {
-            const deleteAtDate = new Date(deleteAt.replace(/(\d{2})\/(\d{2})\/(\d{4})-(\d{2}):(\d{2})/,
-                (match, month, day, year, hours, minutes) => {
-                    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
-                }
-            ));
+            console.log(`The delete at entered is ${deleteAt}`);
+            const match = deleteAt.match(/(\d{2})\/(\d{2})\/(\d{4})-(\d{2}):(\d{2})/);
+            if (!match) {
+                throw new Error('Invalid format (24-hour clock): Expected mm/dd/yyyy-hh:mm');
+            }
+
+            const [_, month, day, year, hours, minutes] = match.map(Number);
+
+
+            if (!TimeParser.isValidDate(year, month-1, day)) {
+                throw new Error(`Invalid date: Date ${month}/${day}/${year} does not exist`);
+            }
+
+            if (!TimeParser.isValidTime(hours, minutes)) {
+                throw new Error('Invalid time (24-hour clock): Time must be in the range 00:00 - 23:59');
+            }
+
+            const deleteAtDate = new Date(year, month-1, day, hours, minutes, 0, 0);
+            console.log(`Validated time is ${deleteAtDate}`);
 
             if (isNaN(deleteAtDate)) {
-                throw new Error('Date and time need to follow this format: mm/dd/yyyy-HH:mm');
+                throw new Error('Date and time need to follow this format (24-hour clock): mm/dd/yyyy-hh:mm');
             }
 
             return deleteAtDate;
         } catch (e) {
-            //console.log('Invalid date format: '+ e);
-            throw new Error('Invalid date format: Date and time need to follow this format: mm/dd/yyyy-HH:mm');
+            console.log( e);
+            throw new Error(`Something went wrong: ${e}`);
         }
     }
 }
@@ -104,7 +145,7 @@ module.exports = {
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('delete-at')
-                .setDescription('This option has higher priority: Specific time to delete the channel (mm/dd/yyyy-HH:mm)')
+                .setDescription('This option has higher priority: Specific time to delete the channel (mm/dd/yyyy-hh:mm)')
                 .setRequired(false)),
 
     async execute(interaction) {

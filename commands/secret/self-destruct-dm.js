@@ -38,7 +38,7 @@ module.exports = {
         const days = interaction.options.getInteger('days') || 0;
 
         // Calculate total timeout in milliseconds
-        const timeout = (seconds + minutes * 60 + hours * 3600 + days * 86400) * 10000 || 10000; // Default to 10 seconds if all are zero
+        const timeout = (seconds + minutes * 60 + hours * 3600 + days * 86400) * 1000 || 10000; // Default to 10 seconds if all are zero
 
 
 
@@ -64,7 +64,9 @@ module.exports = {
                             // Calculate the exact deletion time
                     const deletionTime = new Date(Date.now() + timeout);
                     console.log("The time out calculated is "+timeout);
-                    deletionTimeString = deletionTime.toLocaleString();
+                    console.log(`The deletion time calculated is ${deletionTime}`);
+                    deletionTimeString = deletionTime.toLocaleString();//!NOTE!: need to consider if users are in different timezones...
+                    console.log(`The deltetion time coverted to localtime format is ${deletionTimeString}`);
                     await button.update({ content: `This message will be deleted at ${deletionTimeString}:\n ${message} \n - from ${sender}`, components: [], ephemeral: true });
                     await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
 
