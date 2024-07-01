@@ -1,10 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 // Replace 'YOUR_USER_ID' with your actual Discord user ID
-const  { ownerId } = require('../../config.json');
+const  { ownerId1, ownerId2 } = require('../../config.json');
 const path= require('node:path');
 const fs=require('fs');
 
+
+//this is chatGPT generated code
 module.exports = {
 	category: 'admin',
 	data: new SlashCommandBuilder()
@@ -16,7 +18,8 @@ module.exports = {
 				.setRequired(true)),
 	async execute(interaction) {
 		// Check if the user is the owner
-		if (interaction.user.id !== ownerId) {
+		//console.log(`User id is ${interaction.user.id}`);
+		if (interaction.user.id !== ownerId1 & interaction.user.id !== ownerId2) {
 			return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
 		}
 
