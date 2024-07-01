@@ -4,11 +4,7 @@ const { request } = require('undici');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('cat-fact')
-        .setDescription('Dm a cat fact that will be deleted after the receiver read it!')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user who needs to read the message')
-                .setRequired(true)),
+        .setDescription('Dm a cat fact that will be deleted after the receiver read it!'),
     async execute(interaction) {
         let fact;
 
@@ -22,7 +18,7 @@ module.exports = {
         }
 
         try {
-             await interaction.reply({ content: fact, ephemeral: true });
+             await interaction.reply({ content: fact});
 
 
         } catch (error) {
