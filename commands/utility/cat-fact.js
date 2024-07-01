@@ -18,7 +18,7 @@ module.exports = {
         }
 
         try {
-             await interaction.reply({ content: fact, ephemeral: true });
+             await interaction.reply({ content: fact});
 
 
         } catch (error) {
