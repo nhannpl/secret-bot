@@ -100,7 +100,6 @@ module.exports = {
                                 clearInterval(interval);
                                 // console.log("Stop collector");
                                 collector.stop();
-
                                 
                                 await countdownMessage.delete();
                                 await sentMessage.delete();
