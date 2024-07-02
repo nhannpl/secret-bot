@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
 const { defaultTimeout } = require('../../config.json');
 
 module.exports = {
@@ -52,15 +52,23 @@ module.exports = {
         try {
             const revealButton = new ButtonBuilder()
                 .setCustomId('reveal_button')
-                .setLabel('Click to reveal the message')
+                .setLabel('Click here to reveal the message')
                 .setStyle(ButtonStyle.Danger);
 
             const sender = interaction.user;
 
             const actionRow = new ActionRowBuilder().addComponents(revealButton);
-            const info = `${sender} sent you a secret message. Please press the button below to see the message. ⚠️ The message will be deleted in ${days} day(s), ${hours} hour(s), ${minutes} minute(s) and ${timeout == 10000 ? 10 : seconds} s after you click reveal.`;
+            const info = new EmbedBuilder()
+            .setColor('#ff5733') // Set the color of the embed
+            .setTitle('🔒 Secret Message')
+            .setDescription(`**${interaction.user.username}** has sent you a secret message!`)
+            .addFields(
+                { name: '📬 **How to Read**', value: `Please press the button below to reveal it.`, inline: false },
+                { name: '⚠️ **Important**', value: `The message will be deleted in **${days} day(s)**, **${hours} hour(s)**, **${minutes} minute(s)**, and **${timeout == 10000 ? 10 : seconds} second(s)** after you click reveal.`, inline: false })
+            .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
+            .setTimestamp(); // Adds the current timestamp
 
-            const sentMessage = await targetUser.send({ content: info, fetchReply: true, components: [actionRow] });
+            const sentMessage = await targetUser.send({ embeds: [info], fetchReply: true, components: [actionRow] });
             const notifyMessageSent = `Sent self-destructing DM to ${targetUser}. If you entered timeout less than 1s, default time the message will be destroyed is ${defaultTimeout}s.`;
 
             await interaction.reply({ content: notifyMessageSent, ephemeral: true });
@@ -78,7 +86,16 @@ module.exports = {
                     // console.log(`The deletion time calculated is ${deletionTime}`);
                     deletionTimeString = deletionTime.toLocaleString();//!NOTE!: need to consider if users are in different timezones...
                     console.log(`The deltetion time coverted to localtime format is ${deletionTimeString}`);
-                    await button.update({ content: `This message will be deleted at ${deletionTimeString}:\n ${message} \n - from ${sender}`, components: [], ephemeral: true });
+                    const embed = new EmbedBuilder()
+                    .setColor('#ff0000') // Set a color
+                    .setTitle('🔒 Secret Message')
+                    .setDescription(`**Message Content:**\n${message}`)
+                    .addFields(
+                        { name: '🕒 Deletion Time', value: deletionTimeString, inline: false }
+                    )
+                    .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
+                    .setTimestamp();
+                    await button.update({ embeds: [embed], components: [], ephemeral: true });
                     await sentMessage.react('⏰');
                     await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
 
@@ -87,14 +104,14 @@ module.exports = {
                         let countdown = countDownMin;
                         await countdownMessage.react('⏰');
                         const countdownEmojis = ['🔟', '9️⃣', '8️⃣', '7️⃣', '6️⃣', '5️⃣', '4️⃣', '3️⃣', '2️⃣', '1️⃣'];
-                        await countdownMessage.react(countdownEmojis[10 - countDownMin]);
+                        await sentMessage.react(countdownEmojis[10 - countDownMin]);
 
                         const interval = setInterval(async () => {
                             //console.log("Countdown is "+countdown);
                             countdown--;
                             if (countdown > 0) {
 
-                                await countdownMessage.react(countdownEmojis[10 - countdown]);
+                                await sentMessage.react(countdownEmojis[10 - countdown]);
                             } else {
                                 // console.log("Done countdown. Starting clear reactions");
                                 clearInterval(interval);
