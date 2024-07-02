@@ -14,10 +14,6 @@ class ChannelManager {
     async getChannelById(channelId) {
         return await this.guild.channels.cache.get(channelId);
     }
-
-
-
-
 }
 
 class InteractionHandler {
@@ -53,7 +49,6 @@ module.exports = {
             const channel = interaction.options.getChannel('channel');
          
             const channelName=""+channel;
-
 
             await channelManager.revokeAccess(channel, userId);
             await handler.replyMessage(`You have left the channel <#${channelName}>.`);
