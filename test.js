@@ -83,7 +83,6 @@ module.exports = {
                 .setTimestamp();
 
             const sentMessage = await interaction.reply({ embeds: [info], fetchReply: true, components: [actionRow] });
-            await sentMessage.react('⏰');
 
             const collector = sentMessage.createMessageComponentCollector({});
 
@@ -111,7 +110,6 @@ module.exports = {
                                     lock.acquire('message-lock', async (doneTimeout) => {
                                         try {
                                             const countdownMessage = await sentMessage.reply({ content: `This message will be destroyed in ${countDownMin}s` });
-                                            await countdownMessage.react('⏰');
                                             let countdown = countDownMin;
                                             const countdownEmojis = ['🔟', '9️⃣', '8️⃣', '7️⃣', '6️⃣', '5️⃣', '4️⃣', '3️⃣', '2️⃣', '1️⃣'];
                                             await sentMessage.react(countdownEmojis[10 - countDownMin]);
@@ -150,7 +148,7 @@ module.exports = {
                                     try {
                                         await sentMessage.delete();
                                         collector.stop();
-                                        await interaction.followUp({ content: `Message was forcefully deleted by ${targetUser.username}.`, ephemeral: true });
+                                        await interaction.followUp({ content: `Message self-destructed immediately by ${targetUser.username}.`, ephemeral: true });
                                     } catch (error) {
                                         console.error('Error deleting message:', error);
                                     } finally {
