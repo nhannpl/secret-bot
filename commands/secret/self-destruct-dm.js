@@ -1,5 +1,7 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const { defaultTimeout } = require('../../config.json');
+const AsyncLock = require('async-lock');
+const lock = new AsyncLock();
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -38,16 +40,13 @@ module.exports = {
         const hours = interaction.options.getInteger('hours') || 0;
         const days = interaction.options.getInteger('days') || 0;
 
-        // Validate that the inputs are non-negative integers
         if (seconds < 0 || minutes < 0 || hours < 0 || days < 0) {
             await interaction.reply({ content: 'All time values must be non-negative integers.', ephemeral: true });
             return;
         }
 
-        // Calculate total timeout in milliseconds
-        const timeout = (seconds + minutes * 60 + hours * 3600 + days * 86400) * 1000 || defaultTimeout * 1000; // Default to 10 seconds if all are zero
+        const timeout = (seconds + minutes * 60 + hours * 3600 + days * 86400) * 1000 || defaultTimeout * 1000;
         let countDownMin = timeout > defaultTimeout * 1000 ? defaultTimeout : timeout / 1000;
-
 
         try {
             const revealButton = new ButtonBuilder()
@@ -59,82 +58,73 @@ module.exports = {
 
             const actionRow = new ActionRowBuilder().addComponents(revealButton);
             const info = new EmbedBuilder()
-            .setColor('#ff5733') // Set the color of the embed
-            .setTitle('🔒 Secret Message')
-            .setDescription(`**${interaction.user.username}** has sent you a secret message!`)
-            .addFields(
-                { name: '📬 **How to Read**', value: `Please press the button below to reveal it.`, inline: false },
-                { name: '⚠️ **Important**', value: `The message will be deleted in **${days} day(s)**, **${hours} hour(s)**, **${minutes} minute(s)**, and **${timeout == 10000 ? 10 : seconds} second(s)** after you click reveal.`, inline: false })
-            .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
-            .setTimestamp(); // Adds the current timestamp
+                .setColor('#ff5733')
+                .setTitle('🔒 Secret Message')
+                .setDescription(`**${interaction.user.username}** has sent you a secret message!`)
+                .addFields(
+                    { name: '📬 **How to Read**', value: `Please press the button below to reveal it.`, inline: false },
+                    { name: '⚠️ **Important**', value: `The message will be deleted in **${days} day(s)**, **${hours} hour(s)**, **${minutes} minute(s)**, and **${timeout == 10000 ? 10 : seconds} second(s)** after you click reveal.`, inline: false })
+                .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
+                .setTimestamp();
 
             const sentMessage = await targetUser.send({ embeds: [info], fetchReply: true, components: [actionRow] });
+            await sentMessage.react('⏰');
             const notifyMessageSent = `Sent self-destructing DM to ${targetUser}. If you entered timeout less than 1s, default time the message will be destroyed is ${defaultTimeout}s.`;
 
             await interaction.reply({ content: notifyMessageSent, ephemeral: true });
 
-            const collector = sentMessage.createMessageComponentCollector({});
-            let deletionTimeString;
-            let countdownMessage;
-            console.log("Beginning collector on");
+            const collector = sentMessage.createMessageComponentCollector({ time: timeout });
 
             collector.on('collect', async (button) => {
                 if (button.customId === 'reveal_button' && button.user.id === targetUser.id) {
-                    // Calculate the exact deletion time
-                    const deletionTime = new Date(Date.now() + timeout);
-                    // console.log("The time out calculated is "+timeout);
-                    // console.log(`The deletion time calculated is ${deletionTime}`);
-                    deletionTimeString = deletionTime.toLocaleString();//!NOTE!: need to consider if users are in different timezones...
-                    console.log(`The deltetion time coverted to localtime format is ${deletionTimeString}`);
-                    const embed = new EmbedBuilder()
-                    .setColor('#ff0000') // Set a color
-                    .setTitle('🔒 Secret Message')
-                    .setDescription(`**Message Content:**\n${message}`)
-                    .addFields(
-                        { name: '🕒 Deletion Time', value: deletionTimeString, inline: false }
-                    )
-                    .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
-                    .setTimestamp();
-                    await button.update({ embeds: [embed], components: [], ephemeral: true });
-                    await sentMessage.react('⏰');
-                    await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
+                    await lock.acquire('button_interaction', async () => {
+                        // Only one user can process this critical section at a time
 
-                    setTimeout(async () => {
-                        countdownMessage = await sentMessage.reply({ content: `This message will be destroyed in ${countDownMin}s` });
-                        let countdown = countDownMin;
-                        await countdownMessage.react('⏰');
-                        const countdownEmojis = ['🔟', '9️⃣', '8️⃣', '7️⃣', '6️⃣', '5️⃣', '4️⃣', '3️⃣', '2️⃣', '1️⃣'];
-                        await sentMessage.react(countdownEmojis[10 - countDownMin]);
+                        const deletionTime = new Date(Date.now() + timeout);
+                        const deletionTimeString = deletionTime.toLocaleString();
 
-                        const interval = setInterval(async () => {
-                            //console.log("Countdown is "+countdown);
-                            countdown--;
-                            if (countdown > 0) {
+                        const embed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('🔒 Secret Message')
+                            .setDescription(`**Message Content:**\n${message}`)
+                            .addFields(
+                                { name: '🕒 Deletion Time', value: deletionTimeString, inline: false }
+                            )
+                            .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
+                            .setTimestamp();
 
-                                await sentMessage.react(countdownEmojis[10 - countdown]);
-                            } else {
-                                // console.log("Done countdown. Starting clear reactions");
-                                clearInterval(interval);
-                                // console.log("Stop collector");
-                                collector.stop();
-                                
-                                await countdownMessage.delete();
-                                await sentMessage.delete();
-                                console.log("Deleted message");
+                        await button.update({ embeds: [embed], components: [], ephemeral: true });
+                
+                        await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
 
-                                await targetUser.send({ content: 'The revealed message was self detructed.', ephemeral: true });
-                                await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.`, ephemeral: true });
-                            }
-                        }, 1000);
+                        setTimeout(async () => {
+                            const countdownMessage = await sentMessage.reply({ content: `This message will be destroyed in ${countDownMin}s` });
+                            let countdown = countDownMin;
+                            await countdownMessage.react('⏰');
+                            const countdownEmojis = ['🔟', '9️⃣', '8️⃣', '7️⃣', '6️⃣', '5️⃣', '4️⃣', '3️⃣', '2️⃣', '1️⃣'];
 
-                    }, timeout - (countDownMin) * 1000); // Custom timeout or default 10 seconds
+                            const interval = setInterval(async () => {
+                                countdown--;
+                                if (countdown > 0) {
+                                    await sentMessage.react(countdownEmojis[10 - countdown]);
+                                } else {
+                                    clearInterval(interval);
+                                    collector.stop();
+
+                                    await countdownMessage.delete();
+                                    await sentMessage.delete();
+                                    await targetUser.send({ content: 'The revealed message was self-destructed.', ephemeral: true });
+                                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.`, ephemeral: true });
+                                }
+                            }, 1000);
+                        }, timeout - (countDownMin) * 1000);
+                    }).catch(err => {
+                        console.error('Error in button interaction lock:', err);
+                    });
                 }
             });
-
-
         } catch (error) {
             console.error('Error sending or processing the message:', error);
-            await interaction.followUp('Sorry, something went wrong.');
         }
     },
 };
