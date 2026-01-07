@@ -1,9 +1,22 @@
 const { SlashCommandBuilder } = require('discord.js');
+require('dotenv').config();
 
-// Replace 'YOUR_USER_ID' with your actual Discord user ID
-const  { ownerId1, ownerId2 } = require('../../config.json');
-const path= require('node:path');
-const fs=require('fs');
+// Get owner IDs from environment variables or config.json
+let ownerId1 = process.env.OWNER_ID_1;
+let ownerId2 = process.env.OWNER_ID_2;
+
+if (!ownerId1 || !ownerId2) {
+	try {
+		const config = require('../../config.json');
+		ownerId1 = ownerId1 || config.ownerId1;
+		ownerId2 = ownerId2 || config.ownerId2;
+	} catch (error) {
+		console.warn('No owner IDs found in environment or config.json - reload command will be disabled');
+	}
+}
+
+const path = require('node:path');
+const fs = require('fs');
 
 
 //this is chatGPT generated code
@@ -39,8 +52,8 @@ module.exports = {
 		}
 		const command = interaction.client.commands.get(commandName);
 		console.log()
-		console.log("commandName is "+commandName);
-		console.log("comand is "+command);
+		console.log("commandName is " + commandName);
+		console.log("comand is " + command);
 
 		if (!command) {
 			return interaction.reply({ content: `There is no command with name \`${commandName}\`!`, ephemeral: true });
