@@ -1,5 +1,16 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
-const { defaultTimeout } = require('../../config.json');
+require('dotenv').config();
+
+// Get defaultTimeout from environment or config.json
+let defaultTimeout = parseInt(process.env.DEFAULT_TIMEOUT) || 10;
+if (!process.env.DEFAULT_TIMEOUT) {
+    try {
+        const config = require('../../config.json');
+        defaultTimeout = config.defaultTimeout || 10;
+    } catch (error) {
+        defaultTimeout = 10; // Fallback to 10 seconds
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()

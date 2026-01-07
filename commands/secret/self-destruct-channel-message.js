@@ -1,6 +1,16 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
-const { defaultTimeout } = require('../../config.json');
+require('dotenv').config();
 
+// Get defaultTimeout from environment or config.json
+let defaultTimeout = parseInt(process.env.DEFAULT_TIMEOUT) || 10;
+if (!process.env.DEFAULT_TIMEOUT) {
+    try {
+        const config = require('../../config.json');
+        defaultTimeout = config.defaultTimeout || 10;
+    } catch (error) {
+        defaultTimeout = 10; // Fallback to 10 seconds
+    }
+}
 
 /*ChatGPT assistance: ChatGPT provide template for this code and process intensive prompts from me to write this code. 
 * there are some modification in syntax to fit the new version of node js
