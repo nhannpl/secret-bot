@@ -59,27 +59,31 @@ module.exports = {
 
             const actionRow = new ActionRowBuilder().addComponents(revealButton);
             const info = new EmbedBuilder()
-            .setColor('#ff5733') // Set the color of the embed
-            .setTitle('🔒 Secret Message')
-            .setDescription(`**${interaction.user.username}** has sent you a secret message!`)
-            .addFields(
-                { name: '📬 **How to Read**', value: `Please press the button below to reveal it.`, inline: false },
-                { name: '⚠️ **Important**', value: `The message will be deleted in **${days} day(s)**, **${hours} hour(s)**, **${minutes} minute(s)**, and **${timeout == 10000 ? 10 : seconds} second(s)** after you click reveal.`, inline: false })
-            .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
-            .setTimestamp(); // Adds the current timestamp
+                .setColor('#ff5733') // Set the color of the embed
+                .setTitle('🔒 Secret Message')
+                .setDescription(`**${interaction.user.username}** has sent you a secret message!`)
+                .addFields(
+                    { name: '📬 **How to Read**', value: `Please press the button below to reveal it.`, inline: false },
+                    { name: '⚠️ **Important**', value: `The message will be deleted in **${days} day(s)**, **${hours} hour(s)**, **${minutes} minute(s)**, and **${timeout == 10000 ? 10 : seconds} second(s)** after you click reveal.`, inline: false })
+                .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
+                .setTimestamp(); // Adds the current timestamp
 
             const sentMessage = await targetUser.send({ embeds: [info], fetchReply: true, components: [actionRow] });
             const notifyMessageSent = `Sent self-destructing DM to ${targetUser}. If you entered timeout less than 1s, default time the message will be destroyed is ${defaultTimeout}s.`;
 
             await interaction.reply({ content: notifyMessageSent, ephemeral: true });
 
-            const collector = sentMessage.createMessageComponentCollector({});
+            const collector = sentMessage.createMessageComponentCollector({
+                time: timeout // Set collector timeout to match message timeout
+            });
             let deletionTimeString;
             let countdownMessage;
+            let messageOpened = false;
             console.log("Beginning collector on");
 
             collector.on('collect', async (button) => {
                 if (button.customId === 'reveal_button' && button.user.id === targetUser.id) {
+                    messageOpened = true;
                     // Calculate the exact deletion time
                     const deletionTime = new Date(Date.now() + timeout);
                     // console.log("The time out calculated is "+timeout);
@@ -87,14 +91,14 @@ module.exports = {
                     deletionTimeString = deletionTime.toLocaleString();//!NOTE!: need to consider if users are in different timezones...
                     console.log(`The deltetion time coverted to localtime format is ${deletionTimeString}`);
                     const embed = new EmbedBuilder()
-                    .setColor('#ff0000') // Set a color
-                    .setTitle('🔒 Secret Message')
-                    .setDescription(`**Message Content:**\n${message}`)
-                    .addFields(
-                        { name: '🕒 Deletion Time', value: deletionTimeString, inline: false }
-                    )
-                    .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
-                    .setTimestamp();
+                        .setColor('#ff0000') // Set a color
+                        .setTitle('🔒 Secret Message')
+                        .setDescription(`**Message Content:**\n${message}`)
+                        .addFields(
+                            { name: '🕒 Deletion Time', value: deletionTimeString, inline: false }
+                        )
+                        .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
+                        .setTimestamp();
                     await button.update({ embeds: [embed], components: [], ephemeral: true });
                     await sentMessage.react('⏰');
                     await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
@@ -117,7 +121,7 @@ module.exports = {
                                 clearInterval(interval);
                                 // console.log("Stop collector");
                                 collector.stop();
-                                
+
                                 await countdownMessage.delete();
                                 await sentMessage.delete();
                                 console.log("Deleted message");
@@ -128,6 +132,30 @@ module.exports = {
                         }, 1000);
 
                     }, timeout - (countDownMin) * 1000); // Custom timeout or default 10 seconds
+                }
+            });
+
+            // Handle collector timeout (message was never opened)
+            collector.on('end', async (collected, reason) => {
+                if (reason === 'time' && !messageOpened) {
+                    // Message expired before being opened
+                    try {
+                        const expiredEmbed = new EmbedBuilder()
+                            .setColor('#808080')
+                            .setTitle('⏰ Secret Message Expired')
+                            .setDescription('This secret message has expired and can no longer be opened.')
+                            .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
+                            .setTimestamp();
+
+                        await sentMessage.edit({ embeds: [expiredEmbed], components: [] });
+                        await targetUser.send({ content: '⏰ Your secret message has expired without being opened.' });
+                        await interaction.followUp({
+                            content: `Secret message to ${targetUser} expired without being opened.`,
+                            ephemeral: true
+                        });
+                    } catch (error) {
+                        console.error('Error handling expired message:', error);
+                    }
                 }
             });
 

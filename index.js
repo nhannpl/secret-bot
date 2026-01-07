@@ -1,7 +1,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { token } = require('./config.json');
+require('dotenv').config();
+
+// Use environment variable for production, fallback to config.json for local dev
+let token = process.env.DISCORD_TOKEN;
+if (!token) {
+	try {
+		const config = require('./config.json');
+		token = config.token;
+	} catch (error) {
+		console.error('No token found! Set DISCORD_TOKEN environment variable or add token to config.json');
+		process.exit(1);
+	}
+}
 
 const client = new Client({
 	intents: [

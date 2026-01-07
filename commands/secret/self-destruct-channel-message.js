@@ -86,13 +86,17 @@ module.exports = {
 
             const sentMessage = await interaction.reply({ embeds: [info], fetchReply: true, components: [actionRow] });
 
-            const collector = sentMessage.createMessageComponentCollector({});
+            const collector = sentMessage.createMessageComponentCollector({
+                time: timeout // Set collector timeout to match message timeout
+            });
             let deletionTimeString;
             let countdownMessage;
+            let messageOpened = false;
 
             collector.on('collect', async (button) => {
-                if (button.customId === 'reveal_button')
+                if (button.customId === 'reveal_button') {
                     if (button.user.id === targetUser.id) {
+                        messageOpened = true;
                         // Calculate the exact deletion time
                         const deletionTime = new Date(Date.now() + timeout);
                         // console.log("The time out calculated is "+timeout);
@@ -139,11 +143,34 @@ module.exports = {
                             }, 1000);
 
                         }, timeout - (countDownMin) * 1000); // Custom timeout or default 10 seconds
-                    }
-                    else {
+                    } else {
                         button.deferUpdate();
                         await interaction.followUp(`${button.user} is not authorized to open this message.`);
                     }
+                }
+            });
+
+            // Handle collector timeout (message was never opened)
+            collector.on('end', async (collected, reason) => {
+                if (reason === 'time' && !messageOpened) {
+                    // Message expired before being opened
+                    try {
+                        const expiredEmbed = new EmbedBuilder()
+                            .setColor('#808080')
+                            .setTitle('⏰ Secret Message Expired')
+                            .setDescription('This secret message has expired and can no longer be opened.')
+                            .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
+                            .setTimestamp();
+
+                        await sentMessage.edit({ embeds: [expiredEmbed], components: [] });
+                        await interaction.followUp({
+                            content: `Secret message to ${targetUser} expired without being opened.`,
+                            ephemeral: true
+                        });
+                    } catch (error) {
+                        console.error('Error handling expired message:', error);
+                    }
+                }
             });
 
 

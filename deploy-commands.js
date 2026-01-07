@@ -1,7 +1,22 @@
 const { REST, Routes } = require('discord.js');
-const { clientId, guildId, token } = require('./config.json');
+require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
+
+// Use environment variables for production, fallback to config.json for local dev
+let clientId = process.env.DISCORD_CLIENT_ID;
+let token = process.env.DISCORD_TOKEN;
+
+if (!clientId || !token) {
+	try {
+		const config = require('./config.json');
+		clientId = clientId || config.clientId;
+		token = token || config.token;
+	} catch (error) {
+		console.error('Missing credentials! Set DISCORD_CLIENT_ID and DISCORD_TOKEN environment variables or add to config.json');
+		process.exit(1);
+	}
+}
 
 const commands = [];
 // Grab all the command folders from the commands directory you created earlier
@@ -39,9 +54,9 @@ const rest = new REST().setToken(token);
 
 		// The put method is used to fully refresh all commands in the guild with the current set
 		const data = await rest.put(
-            Routes.applicationCommands(clientId),
-            { body: commands },
-        );
+			Routes.applicationCommands(clientId),
+			{ body: commands },
+		);
 
 		console.log(`Successfully reloaded ${data.length} application (/) commands.`);
 	} catch (error) {
