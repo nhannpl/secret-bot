@@ -128,9 +128,8 @@ module.exports = {
 
                         // Calculate the exact deletion time
                         const deletionTime = new Date(Date.now() + timeout);
-                        // console.log("The time out calculated is "+timeout);
-                        // console.log(`The deletion time calculated is ${deletionTime}`);
-                        deletionTimeString = deletionTime.toLocaleString();//!NOTE!: need to consider if users are in different timezones...
+                        const unixTime = Math.floor(deletionTime.getTime() / 1000);
+                        deletionTimeString = `<t:${unixTime}:T> (<t:${unixTime}:R>)`;
                         // console.log(`The deltetion time coverted to localtime format is ${deletionTimeString}`);
                         const embed = new EmbedBuilder()
                             .setColor('#ff0000') // Set a color

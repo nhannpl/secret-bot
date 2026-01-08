@@ -108,7 +108,8 @@ module.exports = {
 
 							// Calculate the exact deletion time
 							const deletionTime = new Date(Date.now() + timeout);
-							const deletionTimeString = deletionTime.toLocaleString();
+							const unixTime = Math.floor(deletionTime.getTime() / 1000);
+							const deletionTimeString = `<t:${unixTime}:T> (<t:${unixTime}:R>)`;
 
 							const sender = await client.users.fetch(data.sender_id).catch(() => ({ tag: 'Unknown User', avatarURL: () => null }));
 
