@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
+const db = require('../../database');
 require('dotenv').config();
 
 // Get defaultTimeout from environment or config.json
@@ -80,6 +81,20 @@ module.exports = {
                 .setTimestamp(); // Adds the current timestamp
 
             const sentMessage = await targetUser.send({ embeds: [info], fetchReply: true, components: [actionRow] });
+
+            // Save to database for persistence
+            db.addMessage({
+                message_id: sentMessage.id,
+                channel_id: sentMessage.channelId, // This will be the DM channel ID
+                guild_id: null,
+                sender_id: sender.id,
+                target_user_id: targetUser.id,
+                message_content: message,
+                timeout_ms: timeout,
+                created_at: Date.now(),
+                is_dm: 1
+            });
+
             const notifyMessageSent = `Sent self-destructing DM to ${targetUser}. If you entered timeout less than 1s, default time the message will be destroyed is ${defaultTimeout}s.`;
 
             await interaction.reply({ content: notifyMessageSent, ephemeral: true });
@@ -139,6 +154,10 @@ module.exports = {
 
                                 await countdownMessage.delete();
                                 await sentMessage.delete();
+
+                                // Remove from database after successful deletion
+                                db.deleteMessage(sentMessage.id);
+
                                 console.log("Deleted message");
 
                                 await targetUser.send({ content: 'The revealed message was self detructed.', ephemeral: true });

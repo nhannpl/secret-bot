@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
+const db = require('../../database');
 require('dotenv').config();
 
 // Get defaultTimeout from environment or config.json
@@ -96,6 +97,19 @@ module.exports = {
 
             const sentMessage = await interaction.reply({ embeds: [info], fetchReply: true, components: [actionRow] });
 
+            // Save to database for persistence
+            db.addMessage({
+                message_id: sentMessage.id,
+                channel_id: interaction.channelId,
+                guild_id: interaction.guildId,
+                sender_id: sender.id,
+                target_user_id: targetUser.id,
+                message_content: message,
+                timeout_ms: timeout,
+                created_at: Date.now(),
+                is_dm: 0
+            });
+
             // The "Reveal" button will now stay active indefinitely (no time limit).
             // The self-destruct countdown will only start after the receiver clicks the button.
             const collector = sentMessage.createMessageComponentCollector();
@@ -149,6 +163,10 @@ module.exports = {
 
                                     await countdownMessage.delete();
                                     await sentMessage.delete();
+
+                                    // Remove from database after successful deletion
+                                    db.deleteMessage(sentMessage.id);
+
                                     console.log("Deleted message");
 
                                     //await targetUser.send({ content: 'The revealed message was self detructed.', ephemeral: true });

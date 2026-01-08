@@ -1,5 +1,8 @@
 const { Events } = require('discord.js');
 const { request } = require('undici');
+// Initialize database and restore collectors
+const db = require('../database');
+
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
@@ -11,13 +14,13 @@ module.exports = {
 			console.error(`No command matching ${interaction.commandName} was found.`);
 			return;
 		}
-        // if (interaction.commandName === 'cat') {
-        //     const catResult = await request('https://aws.random.cat/meow');
-        //     const { file } = await catResult.body.json();
-        //     interaction.editReply({ files: [file] });
-        // }
-        // else
-        
+		// if (interaction.commandName === 'cat') {
+		//     const catResult = await request('https://aws.random.cat/meow');
+		//     const { file } = await catResult.body.json();
+		//     interaction.editReply({ files: [file] });
+		// }
+		// else
+
 
 		try {
 			await command.execute(interaction);
