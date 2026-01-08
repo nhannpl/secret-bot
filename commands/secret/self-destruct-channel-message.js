@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder, MessageFlags } = require('discord.js');
 const db = require('../../database');
 const { setLongTimeout } = require('../../utils/safe-timer');
 require('dotenv').config();
@@ -54,18 +54,26 @@ module.exports = {
         const hours = interaction.options.getInteger('hours') || 0;
         const days = interaction.options.getInteger('days') || 0;
 
-        const channelMembers = interaction.channel.members;
-
-        if (!channelMembers.has(targetUser.id)) {
+        // Check if user is in the channel (safely)
+        try {
+            const member = await interaction.guild.members.fetch(targetUser.id);
+            if (!interaction.channel.permissionsFor(member).has('ViewChannel')) {
+                return interaction.reply({
+                    content: `The user ${targetUser.username} does not have permission to view this channel.`,
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+        } catch (error) {
+            // If member fetch fails, they probably aren't in the guild
             return interaction.reply({
-                content: `The user ${targetUser.username} is not in the current channel.`,
-                ephemeral: true,
+                content: `The user ${targetUser.username} is not in this server.`,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
         // Validate that the inputs are non-negative integers
         if (seconds < 0 || minutes < 0 || hours < 0 || days < 0) {
-            await interaction.reply({ content: 'All time values must be non-negative integers.', ephemeral: true });
+            await interaction.reply({ content: 'All time values must be non-negative integers.', flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -96,7 +104,8 @@ module.exports = {
                 .setFooter({ text: 'This message will self-destruct after it is opened.', iconURL: sender.avatarURL() })
                 .setTimestamp(); // Adds the current timestamp
 
-            const sentMessage = await interaction.reply({ embeds: [info], fetchReply: true, components: [actionRow] });
+            const sentMessageResponse = await interaction.reply({ embeds: [info], withResponse: true, components: [actionRow] });
+            const sentMessage = sentMessageResponse.resource?.message || await interaction.fetchReply();
 
             // Save to database for persistence
             db.addMessage({
@@ -141,10 +150,10 @@ module.exports = {
                             .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
                             .setTimestamp();
 
-                        await button.update({ embeds: [embed], components: [], ephemeral: true });
+                        await button.update({ embeds: [embed], components: [], flags: MessageFlags.Ephemeral });
                         await sentMessage.react('⏰');
                         try {
-                            await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
+                            await interaction.followUp({ content: `${targetUser} read the message.`, flags: MessageFlags.Ephemeral });
                         } catch (err) {
                             console.log("Interaction expired, skipping sender notification.");
                         }

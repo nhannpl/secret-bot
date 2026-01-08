@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder, MessageFlags } = require('discord.js');
 const db = require('../../database');
 const { setLongTimeout } = require('../../utils/safe-timer');
 require('dotenv').config();
@@ -53,7 +53,7 @@ module.exports = {
 
         // Validate that the inputs are non-negative integers
         if (seconds < 0 || minutes < 0 || hours < 0 || days < 0) {
-            await interaction.reply({ content: 'All time values must be non-negative integers.', ephemeral: true });
+            await interaction.reply({ content: 'All time values must be non-negative integers.', flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -98,7 +98,7 @@ module.exports = {
 
             const notifyMessageSent = `Sent self-destructing DM to ${targetUser}. If you entered timeout less than 1s, default time the message will be destroyed is ${defaultTimeout}s.`;
 
-            await interaction.reply({ content: notifyMessageSent, ephemeral: true });
+            await interaction.reply({ content: notifyMessageSent, flags: MessageFlags.Ephemeral });
 
             // The "Reveal" button will now stay active indefinitely (no time limit).
             // The self-destruct countdown will only start after the receiver clicks the button.
@@ -129,10 +129,10 @@ module.exports = {
                         )
                         .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
                         .setTimestamp();
-                    await button.update({ embeds: [embed], components: [], ephemeral: true });
+                    await button.update({ embeds: [embed], components: [], flags: MessageFlags.Ephemeral });
                     await sentMessage.react('⏰');
                     try {
-                        await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
+                        await interaction.followUp({ content: `${targetUser} read the message.`, flags: MessageFlags.Ephemeral });
                     } catch (err) {
                         console.log("Interaction expired, skipping sender notification.");
                     }
@@ -164,9 +164,9 @@ module.exports = {
 
                                 console.log("Deleted message");
 
-                                await targetUser.send({ content: 'The revealed message was self detructed.', ephemeral: true });
+                                await targetUser.send({ content: 'The revealed message was self detructed.', flags: MessageFlags.Ephemeral });
                                 try {
-                                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.`, ephemeral: true });
+                                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.`, flags: MessageFlags.Ephemeral });
                                 } catch (err) {
                                     console.log("Interaction expired, skipping self-destruct notification.");
                                 }
