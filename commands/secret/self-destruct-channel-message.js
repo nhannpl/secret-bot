@@ -96,9 +96,9 @@ module.exports = {
 
             const sentMessage = await interaction.reply({ embeds: [info], fetchReply: true, components: [actionRow] });
 
-            const collector = sentMessage.createMessageComponentCollector({
-                time: timeout // Set collector timeout to match message timeout
-            });
+            // The "Reveal" button will now stay active indefinitely (no time limit).
+            // The self-destruct countdown will only start after the receiver clicks the button.
+            const collector = sentMessage.createMessageComponentCollector();
             let deletionTimeString;
             let countdownMessage;
             let messageOpened = false;
@@ -125,7 +125,11 @@ module.exports = {
 
                         await button.update({ embeds: [embed], components: [], ephemeral: true });
                         await sentMessage.react('⏰');
-                        await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
+                        try {
+                            await interaction.followUp({ content: `${targetUser} read the message.`, ephemeral: true });
+                        } catch (err) {
+                            console.log("Interaction expired, skipping sender notification.");
+                        }
 
                         setTimeout(async () => {
                             countdownMessage = await sentMessage.reply({ content: `This message will be destroyed in ${countDownMin}s` });
@@ -148,7 +152,11 @@ module.exports = {
                                     console.log("Deleted message");
 
                                     //await targetUser.send({ content: 'The revealed message was self detructed.', ephemeral: true });
-                                    await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.` });
+                                    try {
+                                        await interaction.followUp({ content: `Message self-destructed at ${deletionTimeString}.` });
+                                    } catch (err) {
+                                        console.log("Interaction expired, skipping self-destruct notification.");
+                                    }
                                 }
                             }, 1000);
 
@@ -160,28 +168,7 @@ module.exports = {
                 }
             });
 
-            // Handle collector timeout (message was never opened)
-            collector.on('end', async (collected, reason) => {
-                if (reason === 'time' && !messageOpened) {
-                    // Message expired before being opened
-                    try {
-                        const expiredEmbed = new EmbedBuilder()
-                            .setColor('#808080')
-                            .setTitle('⏰ Secret Message Expired')
-                            .setDescription('This secret message has expired and can no longer be opened.')
-                            .setFooter({ text: `From ${sender.tag}`, iconURL: sender.avatarURL() })
-                            .setTimestamp();
 
-                        await sentMessage.edit({ embeds: [expiredEmbed], components: [] });
-                        await interaction.followUp({
-                            content: `Secret message to ${targetUser} expired without being opened.`,
-                            ephemeral: true
-                        });
-                    } catch (error) {
-                        console.error('Error handling expired message:', error);
-                    }
-                }
-            });
 
 
         } catch (error) {
