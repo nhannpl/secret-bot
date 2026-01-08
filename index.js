@@ -36,6 +36,29 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Bot is online!'));
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
+// Keep-alive mechanism for Render
+const https = require('https');
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
+
+if (RENDER_EXTERNAL_URL) {
+	// Ping every 5 minutes (Render sleeps after 15 mins, but better safe than sorry)
+	const PING_INTERVAL = 5 * 60 * 1000;
+
+	setInterval(() => {
+		https.get(RENDER_EXTERNAL_URL, (res) => {
+			if (res.statusCode === 200) {
+				console.log(`[Keep-Alive] Ping successful to ${RENDER_EXTERNAL_URL}`);
+			} else {
+				console.log(`[Keep-Alive] Ping failed with status: ${res.statusCode}`);
+			}
+		}).on('error', (e) => {
+			console.error(`[Keep-Alive] Ping error: ${e.message}`);
+		});
+	}, PING_INTERVAL);
+
+	console.log(`[Keep-Alive] Configured to ping ${RENDER_EXTERNAL_URL} every 5 minutes`);
+}
+
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);

@@ -308,11 +308,14 @@ git push origin main
 
 ---
 
-## 💡 **Keeping Bot Awake (Optional)**
+## 💡 **Keeping Bot Awake**
 
-If you want your bot to respond faster, you can use **UptimeRobot** or **cron-job.org** to ping your bot every 15 minutes:
+**GOOD NEWS:** Your bot now has a built-in "Keep-Alive" system! 
+- It automatically pings itself every 5 minutes to prevent Render from sleeping.
+- This uses the `RENDER_EXTERNAL_URL` that Render provides automatically.
 
-**Note:** This only works if you add a simple HTTP endpoint to your bot. Not required for basic functionality.
+**Alternative Method (Fallback):**
+If you still notice the bot sleeping, you can use **UptimeRobot** or **cron-job.org** to ping your bot's URL (`https://your-service-name.onrender.com`) every 5 minutes.
 
 ---
 
