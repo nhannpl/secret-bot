@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { setLongTimeout } = require('../../utils/safe-timer');
 require('dotenv').config();
 
 // Get defaultTimeout from environment or config.json
@@ -110,6 +111,10 @@ module.exports = {
             collector.on('collect', async (button) => {
                 if (button.customId === 'reveal_button' && button.user.id === targetUser.id) {
                     messageOpened = true;
+
+                    // Mark as revealed in DB
+                    db.markAsRevealed(sentMessage.id, Date.now());
+
                     // Calculate the exact deletion time
                     const deletionTime = new Date(Date.now() + timeout);
                     // console.log("The time out calculated is "+timeout);
@@ -133,7 +138,7 @@ module.exports = {
                         console.log("Interaction expired, skipping sender notification.");
                     }
 
-                    setTimeout(async () => {
+                    setLongTimeout(async () => {
                         countdownMessage = await sentMessage.reply({ content: `This message will be destroyed in ${countDownMin}s` });
                         let countdown = countDownMin;
                         await countdownMessage.react('⏰');
