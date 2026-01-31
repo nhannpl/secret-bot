@@ -311,11 +311,29 @@ git push origin main
 ## 💡 **Keeping Bot Awake**
 
 **GOOD NEWS:** Your bot now has a built-in "Keep-Alive" system! 
-- It automatically pings itself every 5 minutes to prevent Render from sleeping.
+- It automatically pings itself to prevent Render from sleeping.
 - This uses the `RENDER_EXTERNAL_URL` that Render provides automatically.
 
+### Configuring Ping Interval
+
+You can configure how often the bot pings itself using the `PING_INTERVAL_MINUTES` environment variable:
+
+| Variable | Default | Min | Max | Description |
+|----------|---------|-----|-----|-------------|
+| `PING_INTERVAL_MINUTES` | 5 | 1 | 14 | How often (in minutes) to ping to stay awake |
+
+**To change the ping interval:**
+1. Go to Render Dashboard → Your Service → "Environment" tab
+2. Add new variable: `PING_INTERVAL_MINUTES` = your desired value (e.g., `10`)
+3. Service will auto-restart with the new setting
+
+**Tips:**
+- Start with 10-12 minutes to minimize pings
+- If bot still sleeps, reduce the interval
+- Minimum is 1 minute, maximum is 14 minutes (to stay under 15-min timeout)
+
 **Alternative Method (Fallback):**
-If you still notice the bot sleeping, you can use **UptimeRobot** or **cron-job.org** to ping your bot's URL (`https://your-service-name.onrender.com`) every 5 minutes.
+If you still notice the bot sleeping, you can use **UptimeRobot** or **cron-job.org** to ping your bot's URL (`https://your-service-name.onrender.com`) at your preferred interval.
 
 ---
 

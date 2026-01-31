@@ -40,9 +40,28 @@ app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 const https = require('https');
 const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
 
+// Ping interval configuration constants
+const DEFAULT_PING_INTERVAL_MINUTES = 5;
+const MIN_PING_INTERVAL_MINUTES = 1;
+const MAX_PING_INTERVAL_MINUTES = 14; // Stay under Render's 15-min timeout
+
 if (RENDER_EXTERNAL_URL) {
-	// Ping every 5 minutes (Render sleeps after 15 mins, but better safe than sorry)
-	const PING_INTERVAL = 5 * 60 * 1000;
+	// Parse ping interval from environment variable, with validation
+	let pingIntervalMinutes = parseInt(process.env.PING_INTERVAL_MINUTES, 10);
+
+	// Validate and apply bounds
+	if (isNaN(pingIntervalMinutes) || pingIntervalMinutes < MIN_PING_INTERVAL_MINUTES) {
+		if (process.env.PING_INTERVAL_MINUTES) {
+			console.warn(`[Keep-Alive] Invalid PING_INTERVAL_MINUTES="${process.env.PING_INTERVAL_MINUTES}". Using default: ${DEFAULT_PING_INTERVAL_MINUTES} minutes.`);
+		}
+		pingIntervalMinutes = DEFAULT_PING_INTERVAL_MINUTES;
+	} else if (pingIntervalMinutes > MAX_PING_INTERVAL_MINUTES) {
+		console.warn(`[Keep-Alive] PING_INTERVAL_MINUTES=${pingIntervalMinutes} exceeds max (${MAX_PING_INTERVAL_MINUTES}). Capping to ${MAX_PING_INTERVAL_MINUTES} minutes.`);
+		pingIntervalMinutes = MAX_PING_INTERVAL_MINUTES;
+	}
+
+	// Convert to milliseconds
+	const PING_INTERVAL_MS = pingIntervalMinutes * 60 * 1000;
 
 	setInterval(() => {
 		https.get(RENDER_EXTERNAL_URL, (res) => {
@@ -54,9 +73,9 @@ if (RENDER_EXTERNAL_URL) {
 		}).on('error', (e) => {
 			console.error(`[Keep-Alive] Ping error: ${e.message}`);
 		});
-	}, PING_INTERVAL);
+	}, PING_INTERVAL_MS);
 
-	console.log(`[Keep-Alive] Configured to ping ${RENDER_EXTERNAL_URL} every 5 minutes`);
+	console.log(`[Keep-Alive] Configured to ping ${RENDER_EXTERNAL_URL} every ${pingIntervalMinutes} minutes`);
 }
 
 client.commands = new Collection();
