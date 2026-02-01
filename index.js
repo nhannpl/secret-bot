@@ -118,13 +118,41 @@ for (const file of eventFiles) {
 	}
 }
 
+// Handle unhandled promise rejections (catch any silent crashes)
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('[CRASH] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+	console.error('[CRASH] Uncaught Exception:', error.message);
+	console.error(error.stack);
+});
+
+// Login timeout - detect if login hangs
+const LOGIN_TIMEOUT_MS = 30000; // 30 seconds
+let loginCompleted = false;
+
+console.log('[Discord] Attempting to login...');
+
+// Set timeout to detect hanging login
+const loginTimeout = setTimeout(() => {
+	if (!loginCompleted) {
+		console.error('[Discord] LOGIN TIMEOUT! Login did not complete within 30 seconds.');
+		console.error('[Discord] This may indicate a network issue connecting to Discord gateway.');
+	}
+}, LOGIN_TIMEOUT_MS);
+
 // Attempt to login to Discord with error handling
 client.login(token)
 	.then(() => {
+		loginCompleted = true;
+		clearTimeout(loginTimeout);
 		console.log('[Discord] Login initiated successfully');
 	})
 	.catch((error) => {
+		loginCompleted = true;
+		clearTimeout(loginTimeout);
 		console.error('[Discord] Failed to login:', error.message);
-		console.error('[Discord] This usually means the DISCORD_TOKEN is invalid or missing');
-		console.error('[Discord] Please check your environment variables on Render');
+		console.error('[Discord] Error code:', error.code);
+		console.error('[Discord] Full error:', error);
 	});
