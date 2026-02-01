@@ -109,4 +109,13 @@ for (const file of eventFiles) {
 	}
 }
 
-client.login(token);
+// Attempt to login to Discord with error handling
+client.login(token)
+	.then(() => {
+		console.log('[Discord] Login initiated successfully');
+	})
+	.catch((error) => {
+		console.error('[Discord] Failed to login:', error.message);
+		console.error('[Discord] This usually means the DISCORD_TOKEN is invalid or missing');
+		console.error('[Discord] Please check your environment variables on Render');
+	});
