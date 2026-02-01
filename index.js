@@ -5,15 +5,24 @@ require('dotenv').config();
 
 // Use environment variable for production, fallback to config.json for local dev
 let token = process.env.DISCORD_TOKEN;
+
+// Diagnostic logging for debugging Render deployment
+console.log('[Startup] Checking for DISCORD_TOKEN...');
+console.log('[Startup] DISCORD_TOKEN from env:', token ? `Found (${token.length} chars, starts with ${token.substring(0, 10)}...)` : 'NOT FOUND');
+
 if (!token) {
+	console.log('[Startup] Trying to load token from config.json...');
 	try {
 		const config = require('./config.json');
 		token = config.token;
+		console.log('[Startup] Token loaded from config.json:', token ? 'Found' : 'NOT FOUND');
 	} catch (error) {
-		console.error('No token found! Set DISCORD_TOKEN environment variable or add token to config.json');
+		console.error('[Startup] No token found! Set DISCORD_TOKEN environment variable or add token to config.json');
 		process.exit(1);
 	}
 }
+
+console.log('[Startup] Final token status:', token ? 'Ready to login' : 'MISSING - will crash');
 
 const client = new Client({
 	intents: [
@@ -75,7 +84,7 @@ if (RENDER_EXTERNAL_URL) {
 		});
 	}, PING_INTERVAL_MS);
 
-	console.log(`[Keep-Alive] Configured to ping ${RENDER_EXTERNAL_URL} every ${pingIntervalMinutes} minutes`);
+	console.log(`[Keep-Alive] Configured to ping ${RENDER_EXTERNAL_URL} every ${pingIntervalMinutes} minute. (Error gateway)`);
 }
 
 client.commands = new Collection();
